@@ -1,0 +1,22 @@
+{
+    "name": "dannypas00/laravel-dynamic-routes",
+    "description": "A dynamic route service provider that maps route files based on their path",
+    "type": "library",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "DannyPas00\\LaravelDynamicRoutes\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Danny Pas",
+            "email": "composer@dannypas.nl"
+        }
+    ],
+    "minimum-stability": "beta",
+    "require": {
+        "laravel/framework": "^9.48",
+        "php": "^8.0"
+    }
+}

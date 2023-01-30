@@ -16,7 +16,7 @@
     ],
     "minimum-stability": "beta",
     "require": {
-        "laravel/framework": "^9.48",
+        "laravel/framework": "^9.0",
         "php": "^8.0"
     }
 }

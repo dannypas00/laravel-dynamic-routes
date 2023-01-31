@@ -16,7 +16,7 @@ class RouteServiceProvider extends ServiceProvider
      * What directory to use for the routes
      * Will almost always stay default 'routes'
      */
-    private const ROUTE_DIRECTORY = 'routes';
+    public const ROUTE_DIRECTORY = 'routes';
 
     /**
      * Register all routes in the ROUTE_DIRECTORY directory

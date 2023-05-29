@@ -24,11 +24,20 @@ class RouteServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->routes(function (): void {
-            // Load all route directories
-            collect(File::directories(base_path(self::ROUTE_DIRECTORY)))->each(function (string $directory): void {
-                // Load all route files in each directory
-                $this->registerDirectory($directory);
-            });
+            $this->routeRegistration();
+        });
+    }
+
+    /**
+     * Function that actually registers the routes
+     * Be sure to call this if you implement your own routes in the $this->routes() function since it can only be called once
+     */
+    protected function routeRegistration(): void
+    {
+        // Load all route directories
+        collect(File::directories(base_path(self::ROUTE_DIRECTORY)))->each(function (string $directory): void {
+            // Load all route files in each directory
+            $this->registerDirectory($directory);
         });
     }
 
@@ -78,7 +87,7 @@ class RouteServiceProvider extends ServiceProvider
      * @param string $directory
      * @return string|null
      */
-    private function matchMiddleware(string $directory): string|null
+    protected function matchMiddleware(string $directory): string|null
     {
         return match ($directory) {
             default => null

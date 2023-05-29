@@ -91,6 +91,8 @@ class RouteServiceProvider extends ServiceProvider
         $directory = Str::remove(base_path(self::ROUTE_DIRECTORY), $directory);
         $directory = trim($directory, '/');
 
+        $middlewareName = $this->matchMiddleware($directory);
+
         // Flatten directory if it starts with a flattened directory
         // Note: This will break in an edge case where a flatten-directory is re-used in an already flattened tree
         // e.g. if FLATTEN_DIRECTORIES contains 'web', and there is a file registered at /routes/web/foo/web/bar.php
@@ -98,14 +100,11 @@ class RouteServiceProvider extends ServiceProvider
             $directory = Str::remove(self::FLATTEN_DIRECTORIES, $directory);
         }
 
-        $dottedDirectory = str_replace(DIRECTORY_SEPARATOR, '.', $directory);
-
         $prefix = $this->getPrefix($directory, $fileInfo);
         $dottedRoute = str_replace(DIRECTORY_SEPARATOR, '.', $prefix);
 
         $routeRegistrar = Route::name(ltrim($dottedRoute . '.', '.'));
 
-        $middlewareName = $this->matchMiddleware($dottedDirectory);
         if ($middlewareName) {
             $routeRegistrar->middleware($middlewareName);
         }

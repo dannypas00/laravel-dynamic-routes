@@ -45,9 +45,7 @@ class RouteServiceProvider extends ServiceProvider
      */
     protected function matchMiddleware(string $directory): string|null
     {
-        return match ($directory) {
-            default => null
-        };
+        return null;
     }
 
     /**

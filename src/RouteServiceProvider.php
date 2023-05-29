@@ -19,6 +19,12 @@ class RouteServiceProvider extends ServiceProvider
     public const ROUTE_DIRECTORY = 'routes';
 
     /**
+     * Routes in this files will not be prefixed
+     * Leaving this as 'web' will make any route file in 'web.php' file start at '/' instead of '/web'
+     */
+    public const ROOT_FILE = 'web';
+
+    /**
      * Register all routes in the ROUTE_DIRECTORY directory
      */
     public function boot(): void
@@ -49,11 +55,28 @@ class RouteServiceProvider extends ServiceProvider
     private function registerDirectory(string $directory): void
     {
         collect(File::allFiles($directory))->each(function (SplFileInfo $fileInfo) use ($directory): void {
-            $this->registerRouteFile(trim(DIRECTORY_SEPARATOR, $directory), $fileInfo);
+            // Handle root file
+            $routePath = Str::after(base_path(self::ROUTE_DIRECTORY), $fileInfo->getPathname());
+            if ($routePath === self::ROOT_FILE . '.php') {
+                $this->registerRootFile($fileInfo);
+                return;
+            }
+
+            $this->registerRouteFile($directory, $fileInfo);
         });
+
         collect(File::directories($directory))->each(function (string $directory): void {
-            $this->registerDirectory($directory);
+            $this->registerDirectory(trim($directory, DIRECTORY_SEPARATOR));
         });
+    }
+
+    /**
+     * Register the root file without prefix, name, or middleware
+     * @param SplFileInfo $fileInfo
+     */
+    private function registerRootFile(SplFileInfo $fileInfo): void
+    {
+        Route::namespace($this->namespace)->group($fileInfo->getPathname());
     }
 
     /**
@@ -71,7 +94,8 @@ class RouteServiceProvider extends ServiceProvider
 
         $routeRegistrar = Route::name($dottedRoute . '.');
 
-        if ($middlewareName = $this->matchMiddleware($dottedDirectory)) {
+        $middlewareName = $this->matchMiddleware($dottedDirectory);
+        if ($middlewareName) {
             $routeRegistrar->middleware($middlewareName);
         }
 

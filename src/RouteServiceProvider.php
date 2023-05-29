@@ -37,6 +37,20 @@ class RouteServiceProvider extends ServiceProvider
     }
 
     /**
+     * Inherit this function to specify directory-wide middleware
+     * e.g. /routes/api/ will use the 'api' middleware
+     *
+     * @param string $directory
+     * @return string|null
+     */
+    protected function matchMiddleware(string $directory): string|null
+    {
+        return match ($directory) {
+            default => null
+        };
+    }
+
+    /**
      * Function that actually registers the routes
      * Be sure to call this if you implement your own routes in the $this->routes() function since it can only be called once
      */
@@ -64,15 +78,6 @@ class RouteServiceProvider extends ServiceProvider
         collect(File::directories($directory))->each(function (string $directory): void {
             $this->registerDirectory($directory);
         });
-    }
-
-    /**
-     * Register the root file without prefix, name, or middleware
-     * @param SplFileInfo $fileInfo
-     */
-    private function registerRootFile(SplFileInfo $fileInfo): void
-    {
-        Route::namespace($this->namespace)->group($fileInfo->getPathname());
     }
 
     /**
@@ -124,19 +129,5 @@ class RouteServiceProvider extends ServiceProvider
             return $directory;
         }
         return $directory . '/' . $baseName;
-    }
-
-    /**
-     * Inherit this function to specify directory-wide middleware
-     * e.g. /routes/api/ will use the 'api' middleware
-     *
-     * @param string $directory
-     * @return string|null
-     */
-    protected function matchMiddleware(string $directory): string|null
-    {
-        return match ($directory) {
-            default => null
-        };
     }
 }

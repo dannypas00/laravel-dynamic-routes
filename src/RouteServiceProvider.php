@@ -20,9 +20,11 @@ class RouteServiceProvider extends ServiceProvider
 
     /**
      * Routes in this files will not be prefixed
-     * Leaving this as 'web' will make any route file in 'web.php' file start at '/' instead of '/web'
+     * Leaving this as 'root' will prevent any 'root.php' file in any directory from having its name prefixed
      */
-    public const ROOT_FILE = 'web';
+    public const ROOT_FILE = 'root';
+
+    public const FLATTEN_DIRECTORIES = ['web'];
 
     /**
      * Register all routes in the ROUTE_DIRECTORY directory
@@ -41,10 +43,11 @@ class RouteServiceProvider extends ServiceProvider
     protected function routeRegistration(): void
     {
         // Load all route directories
-        collect(File::directories(base_path(self::ROUTE_DIRECTORY)))->each(function (string $directory): void {
-            // Load all route files in each directory
-            $this->registerDirectory($directory);
-        });
+        collect([...File::directories(base_path(self::ROUTE_DIRECTORY)), base_path(self::ROUTE_DIRECTORY)])
+            ->each(function (string $directory): void {
+                // Load all route files in each directory
+                $this->registerDirectory($directory);
+            });
     }
 
     /**
@@ -55,18 +58,11 @@ class RouteServiceProvider extends ServiceProvider
     private function registerDirectory(string $directory): void
     {
         collect(File::allFiles($directory))->each(function (SplFileInfo $fileInfo) use ($directory): void {
-            // Handle root file
-            $routePath = Str::after(base_path(self::ROUTE_DIRECTORY), $fileInfo->getPathname());
-            if ($routePath === self::ROOT_FILE . '.php') {
-                $this->registerRootFile($fileInfo);
-                return;
-            }
-
             $this->registerRouteFile($directory, $fileInfo);
         });
 
         collect(File::directories($directory))->each(function (string $directory): void {
-            $this->registerDirectory(trim($directory, DIRECTORY_SEPARATOR));
+            $this->registerDirectory($directory);
         });
     }
 
@@ -88,20 +84,46 @@ class RouteServiceProvider extends ServiceProvider
     private function registerRouteFile(string $directory, SplFileInfo $fileInfo): void
     {
         $directory = Str::remove(base_path(self::ROUTE_DIRECTORY), $directory);
-        $dottedDirectory = str_replace(DIRECTORY_SEPARATOR, '.', $directory);
-        $route = $directory . '/' . $fileInfo->getBasename('.' . $fileInfo->getExtension());
-        $dottedRoute = str_replace(DIRECTORY_SEPARATOR, '.', $route);
+        $directory = trim($directory, '/');
 
-        $routeRegistrar = Route::name($dottedRoute . '.');
+        // Flatten directory if it starts with a flattened directory
+        // Note: This will break in an edge case where a flatten-directory is re-used in an already flattened tree
+        // e.g. if FLATTEN_DIRECTORIES contains 'web', and there is a file registered at /routes/web/foo/web/bar.php
+        if (Str::startsWith($directory, self::FLATTEN_DIRECTORIES)) {
+            $directory = Str::remove(self::FLATTEN_DIRECTORIES, $directory);
+        }
+
+        $dottedDirectory = str_replace(DIRECTORY_SEPARATOR, '.', $directory);
+
+        $prefix = $this->getPrefix($directory, $fileInfo);
+        $dottedRoute = str_replace(DIRECTORY_SEPARATOR, '.', $prefix);
+
+        $routeRegistrar = Route::name(ltrim($dottedRoute . '.', '.'));
 
         $middlewareName = $this->matchMiddleware($dottedDirectory);
         if ($middlewareName) {
             $routeRegistrar->middleware($middlewareName);
         }
 
-        $routeRegistrar->prefix($route)
+        $routeRegistrar->prefix($prefix)
             ->namespace($this->namespace)
             ->group($fileInfo->getPathname());
+    }
+
+    /**
+     * If the filename corresponds to the ROOT_FILE, don't add its name to the route
+     *
+     * @param string $directory
+     * @param SplFileInfo $fileInfo
+     * @return string
+     */
+    private function getPrefix(string $directory, SplFileInfo $fileInfo): string
+    {
+        $baseName = $fileInfo->getBasename('.' . $fileInfo->getExtension());
+        if ($baseName === self::ROOT_FILE) {
+            return $directory;
+        }
+        return $directory . '/' . $baseName;
     }
 
     /**

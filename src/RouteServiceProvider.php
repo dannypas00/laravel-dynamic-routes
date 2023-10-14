@@ -54,12 +54,7 @@ class RouteServiceProvider extends ServiceProvider
      */
     protected function routeRegistration(): void
     {
-        // Load all route directories
-        collect([...File::directories(base_path(self::ROUTE_DIRECTORY)), base_path(self::ROUTE_DIRECTORY)])
-            ->each(function (string $directory): void {
-                // Load all route files in each directory
-                $this->registerDirectory($directory);
-            });
+        $this->registerDirectory(base_path(self::ROUTE_DIRECTORY));
     }
 
     /**
@@ -69,7 +64,7 @@ class RouteServiceProvider extends ServiceProvider
      */
     private function registerDirectory(string $directory): void
     {
-        collect(File::allFiles($directory))->each(function (SplFileInfo $fileInfo) use ($directory): void {
+        collect(File::files($directory))->each(function (SplFileInfo $fileInfo) use ($directory): void {
             $this->registerRouteFile($directory, $fileInfo);
         });
 
